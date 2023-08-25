@@ -1,0 +1,122 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <ctype.h>
+
+struct node{  /* The struct for the nodes for the doubly linked list. */
+  struct node* prev;
+  char word[50];
+  struct node* next;
+};
+
+/* Fuction for putting the nodes into doubly linked list. */
+struct node* doubly_linked_list(struct node* node_data, struct node* head){
+    if (head == NULL) {
+    head = node_data;
+  } else {
+    struct node* current = head;
+    while (current->next != NULL) {
+      current = current->next;
+    }
+    current->next = node_data;
+    node_data->prev = current;
+  }
+  
+  return head;
+}
+
+/* Function for creating nodes for the doubly linked list. */
+struct node *create_node(char *word){
+  struct node *new_node = (struct node*)malloc(sizeof(struct node));
+  strcpy(new_node -> word, word);
+  new_node -> prev = NULL;
+  new_node -> next = NULL;
+  return new_node;
+}
+
+/* Fuction for printing all the words in the doubly linked list. */
+void print_list(struct node* head){
+  struct node *current = head;
+
+  while (current != NULL){
+    printf("%s\n", current -> word);
+    current = current -> next;
+  }
+}
+
+int main(int argc, char **argv){
+  extern char *optarg;
+  extern int optind;
+  int c, err = 0, dflag = 0, oflag = 0; 
+  char *ovalue = NULL;
+  static char usage[] = "doublesort [-d] [-o output_file_name] input_file_name\n";
+
+  /* Using Getopt to sparse through the commandline arguments.  */
+  while ((c = getopt(argc, argv, "do:")) != -1){
+    switch(c){
+      case 'd':
+        dflag = 1;
+        break;
+      case 'o':
+        oflag = 1;
+        ovalue = optarg;
+        break;
+      case '?':
+        err = '?';
+        break;
+    }
+  }
+  
+  if(argv[1] == NULL){
+    fprintf(stderr, usage, argv[0]);
+  }
+
+  FILE *fptr;  /* FILE variable for reading file */
+  fptr = fopen(argv[optind], "r");  /* Opeing the file from command line into read mode. */
+  
+  if (fptr == NULL){ /* If there are no words in file or file did not open. */
+    printf("Error opening file\n");
+    return -1; 
+  }
+
+  char word[50];
+  struct node* head = NULL;
+  char ch;
+
+  /* While loop for detecting the group of characters to form a word with the use of a space or new line. */
+  while ((ch = fgetc(fptr)) != EOF){
+    ch = tolower(ch); /* Use of tolower to lower case the capitals. */
+    if(ch == ' ' || ch == '\n'){
+      if(strlen(word) > 0){
+        struct node* word_node = create_node(word);
+        head = doubly_linked_list(word_node, head);
+        strcpy(word, "");
+      }
+    }else{
+      strncat(word, &ch, 1);
+    }
+  }
+
+  if (dflag == 1){
+    print_list(head); /* Methods call to print words to command line. */     
+  }
+
+  if (oflag == 1){
+    FILE *ofp = fopen(ovalue, "w"); /* Opeing the file in write mode. */
+    struct node* current = head;
+    while (current != NULL){
+      fputs(current -> word, ofp);  /* Using fputs to copy the words into the file from command line. */
+      fputc(' ', ofp);  /* Spacing the words. */
+      current = current -> next;  /* Heading to the next word in the list. */
+    }
+    fclose(ofp);
+  }
+
+  fclose(fptr); /* Close the file pointer using fclose. */
+
+  free(head); /* Free the nodes after use. */
+
+  return 0;
+
+}
